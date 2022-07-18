@@ -18,7 +18,7 @@ AFTERNOON_TIMES = TIMES[3:]
 DAYS = ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri']
 NULLVALUE = ''
 
-@dataclass
+@dataclass(frozen=True)
 class Vineek:
     DIR = DIR
     BLINK = BLINK
@@ -30,7 +30,6 @@ class Vineek:
 
     subjectsData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Timetable')
     classesData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Rooms')
-    timetables = dict()
 
     @staticmethod
     def loader():
