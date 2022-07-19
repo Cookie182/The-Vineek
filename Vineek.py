@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from os import system
 
 DIR = Path(__file__).parent
-BLINK = 0.182
+BLINK = 0.05 #! the higher the value, the more the noise
 TIMES = ['9:30 - 10:30',
          '10:30 - 11:30',
          '11:30 - 12:30',
@@ -26,6 +26,7 @@ class Vineek:
     AFTERNOON_TIMES = AFTERNOON_TIMES
     DAYS = DAYS
     NULLVALUE = NULLVALUE
+    SUBJECTTYPES = ['Lecture_hrs', 'Lab_hrs', 'Tut_hrs']
     TIMETABLES = dict()
 
     subjectsData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Timetable')
@@ -125,16 +126,37 @@ class Vineek:
         allClasses = list(allClasses.loc[allClasses['Capacity'] == capacity]['Room No.'].values)
 
         if len(self.TIMETABLES) == 0:
-            print(day, time, subjectType, capacity)
             return choice(allClasses)
         else:
             for prevTTData in self.TIMETABLES.values():
                 occupiedRoom = prevTTData.loc[(time, 'Room'), day]
                 if occupiedRoom in allClasses:
-                    print(f"ROOM INFO -> {day}, {time}, {subjectType}, {capacity}")
+                    # print(f"ROOM INFO -> {day}, {time}, {subjectType}, {capacity}")
                     allClasses.remove(prevTTData.loc[(time, 'Room'), day])
-
         return choice(allClasses)
+
+    def noConsecutive(self, timetable, day, time, teacher):
+        """Prevent consecutive lectures right after another of the same subject and with the same teacher
+
+        Args:
+            timetable (pd.DataFrame): Dataframe that is storing the semester's timetable which is being built
+            day (str): Day of the week
+            time (str): Timeslot
+            teacher (str): Name of the teacher/T.A
+
+        Returns:
+            bool: Whether the same teacher was found in the previous timeslot
+        """
+
+        # if this is the first lecture of the day
+        if time == self.TIMES[0]:
+            return True
+
+        previousTime = self.TIMES[self.TIMES.index(time)-1]
+        if timetable.loc[(previousTime, 'Teacher'), day] == teacher:
+            return False
+
+        return True     
 
 
     def noClash(self, subjectType, day, time, teacher, room):
@@ -156,15 +178,16 @@ class Vineek:
         if len(self.TIMETABLES) == 0:
             if LabTut:
                 if time in self.AFTERNOON_TIMES:
+                    return False if random() >= self.BLINK else True
+                else:
+                    return True if random() >= self.BLINK else False
+
+            else:
+                if time in self.AFTERNOON_TIMES:
                     return True if random() >= self.BLINK else False
                 else:
                     return False if random() >= self.BLINK else True
 
-            else:
-                if time in self.AFTERNOON_TIMES:
-                    return False if random() >= self.BLINK else True
-                else:
-                    return True if random() >= self.BLINK else False
 
         # incase previous timetables were made
         else:
@@ -173,39 +196,51 @@ class Vineek:
                     return False
             return True if random() >= self.BLINK else False
 
-
     def main(self):
         """Fun part"""
         for courseSem, semesterData in self.subjectsData.groupby(by=['Department', 'Semester']):
             timetable = self.emptyDatabase()
             semesterData.set_index('Course', inplace=True)
-            subjectTypes = ['Lecture_hrs', 'Lab_hrs', 'Tut_hrs']
+            for trackCore, trackCoreData in semesterData.groupby(by='Track Core'):
+                input(trackCore)
 
-            while not self.allClassesSlotted(semesterData, subjectTypes):
+            while not self.allClassesSlotted(semesterData, self.SUBJECTTYPES):
                 # combination of days and timeslots
                 for dayMeeting in product(self.DAYS, self.TIMES):
                     day, time = dayMeeting
+                    
+                    if self.allClassesSlotted(semesterData, self.SUBJECTTYPES): break
 
-                    if self.allClassesSlotted(semesterData, subjectTypes):
-                        break
 
                     if timetable.loc[(time, 'Room'), day] == self.NULLVALUE:
-                        randomSubject, randomSubjectType = self.getRandomSubject(semesterData, subjectTypes)
+                        randomSubject, randomSubjectType = self.getRandomSubject(semesterData, self.SUBJECTTYPES)
                         capacity = semesterData.loc[randomSubject, 'Capacity' if randomSubjectType != 'Lab_hrs' else 'Lab_Capacity']
                         teacher = self.getTeacher(semesterData, randomSubject, randomSubjectType)
                         room = self.getClass(day, time, self.classesData, randomSubjectType, capacity)
+
+                        if not self.noConsecutive(timetable, day, time, teacher): break
+                        
                         if self.noClash(randomSubjectType, day, time, teacher, room):
                             timetable.loc[(time, 'Room'), day] = room
                             timetable.loc[(time, 'Teacher'), day] = teacher
-                            timetable.loc[(time, 'Subject'), day] = randomSubject
+
+                            if randomSubjectType in self.SUBJECTTYPES[1:]:
+                                timetable.loc[(time, 'Subject'), day] = f"{randomSubject} ({randomSubjectType[:3]})"
+                            else:
+                                timetable.loc[(time, 'Subject'), day] = randomSubject
+
+                            # keeping track of how many lectures are alloted to a timeslot and how many more need to be allocated
+                            semesterData.loc[randomSubject, randomSubjectType] -=1
+                                
                             print('#' * 200)
                             print(timetable)
                             print('#' * 200)
 
-                            semesterData.loc[randomSubject, randomSubjectType] -=1
                             print(semesterData.to_markdown())
 
             self.TIMETABLES[', '.join([str(x) for x in [courseSem]])] = timetable
+            input(f"\nTimetable created for {courseSem[0]} - Semester {courseSem[1]}, press any button to continue...\n")
+            system('cls')
 
 if __name__ == '__main__':
     Vineek().main()
