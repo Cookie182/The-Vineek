@@ -1,4 +1,5 @@
 import pandas as pd
+
 from pathlib import Path
 from random import random, choice
 from itertools import product
@@ -26,12 +27,15 @@ class Vineek:
     AFTERNOON_TIMES = AFTERNOON_TIMES
     DAYS = DAYS
     NULLVALUE = NULLVALUE
+    TRACKCORE_OEL_NULLVALUE = 0
     SUBJECTTYPES = ['Lecture_hrs', 'Lab_hrs', 'Tut_hrs']
     TIMETABLES = dict()
 
+    #! IMPORTANT #!
     subjectsData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Timetable')
     classesData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Rooms')
-
+    #! IMPORTANT #!
+    
     @staticmethod
     def loader():
         """Simple loading circle, it's for fun, shush"""
@@ -107,7 +111,7 @@ class Vineek:
         else:
             return data.loc[subject, 'Faculty']
 
-    def getClass(self, day, time, classData, subjectType, capacity):
+    def getClass(self, day, time, subjectType, capacity):
         """Returns list of classes eligible to have the class be conducted in depending on class type and capacity
 
         Args:
@@ -122,7 +126,7 @@ class Vineek:
         """
         classType = 'Computer Lab' if subjectType == 'Lab_hrs' else 'Class'
 
-        allClasses = classData.loc[classData['Type'] == classType]
+        allClasses = self.classesData.loc[self.classesData['Type'] == classType]
         allClasses = list(allClasses.loc[allClasses['Capacity'] == capacity]['Room No.'].values)
 
         if len(self.TIMETABLES) == 0:
@@ -135,7 +139,7 @@ class Vineek:
                     allClasses.remove(prevTTData.loc[(time, 'Room'), day])
         return choice(allClasses)
 
-    def noConsecutive(self, timetable, day, time, teacher):
+    def noConsecutiveLectures(self, timetable, day, time, teacher):
         """Prevent consecutive lectures right after another of the same subject and with the same teacher
 
         Args:
@@ -159,7 +163,7 @@ class Vineek:
         return True     
 
 
-    def noClash(self, subjectType, day, time, teacher, room):
+    def noClashesCheck(self, subjectType, day, time, teacher, room):
         """Function that iterates through past timetables to check if there are clashes in timeslots
 
         Args:
@@ -196,13 +200,26 @@ class Vineek:
                     return False
             return True if random() >= self.BLINK else False
 
+
+    def getTrackCoreDetails(self, trackCore_data, randomSubjectType, day, time):
+        teachers, subjects, classNos = [], [], []
+        for subject in trackCore_data.index:
+            teachers.append(self.getTeacher(trackCore_data, subject, randomSubjectType))
+            subjects.append(subject)
+
+            capacity = trackCore_data.loc[subject, 'Lab_Capacity' if randomSubjectType == 'Lab_hrs' else 'Capacity']
+            # input((day, time, trackCore_data, randomSubjectType, capacity))
+            classNo = self.getClass(day, time, randomSubjectType, capacity)
+            classNos.append(classNo)
+
+        return teachers, subjects, classNos
+
     def main(self):
         """Fun part"""
         for courseSem, semesterData in self.subjectsData.groupby(by=['Department', 'Semester']):
             timetable = self.emptyDatabase()
             semesterData.set_index('Course', inplace=True)
-            for trackCore, trackCoreData in semesterData.groupby(by='Track Core'):
-                input(trackCore)
+            semesterData['Track Core'].fillna(self.TRACKCORE_OEL_NULLVALUE, inplace=True)
 
             while not self.allClassesSlotted(semesterData, self.SUBJECTTYPES):
                 # combination of days and timeslots
@@ -211,33 +228,62 @@ class Vineek:
                     
                     if self.allClassesSlotted(semesterData, self.SUBJECTTYPES): break
 
-
                     if timetable.loc[(time, 'Room'), day] == self.NULLVALUE:
                         randomSubject, randomSubjectType = self.getRandomSubject(semesterData, self.SUBJECTTYPES)
-                        capacity = semesterData.loc[randomSubject, 'Capacity' if randomSubjectType != 'Lab_hrs' else 'Lab_Capacity']
-                        teacher = self.getTeacher(semesterData, randomSubject, randomSubjectType)
-                        room = self.getClass(day, time, self.classesData, randomSubjectType, capacity)
 
-                        if not self.noConsecutive(timetable, day, time, teacher): break
-                        
-                        if self.noClash(randomSubjectType, day, time, teacher, room):
-                            timetable.loc[(time, 'Room'), day] = room
-                            timetable.loc[(time, 'Teacher'), day] = teacher
+                        if semesterData.loc[randomSubject, 'Track Core'] == self.TRACKCORE_OEL_NULLVALUE: # for regular subjects
+                            capacity = semesterData.loc[randomSubject, 'Capacity' if randomSubjectType != 'Lab_hrs' else 'Lab_Capacity']
+                            teacher = self.getTeacher(semesterData, randomSubject, randomSubjectType)
+                            room = self.getClass(day, time, randomSubjectType, capacity)
 
-                            if randomSubjectType in self.SUBJECTTYPES[1:]:
-                                timetable.loc[(time, 'Subject'), day] = f"{randomSubject} ({randomSubjectType[:3]})"
-                            else:
-                                timetable.loc[(time, 'Subject'), day] = randomSubject
+                            if not self.noConsecutiveLectures(timetable, day, time, teacher): break
+                            
+                            if self.noClashesCheck(randomSubjectType, day, time, teacher, room):
+                                timetable.loc[(time, 'Room'), day] = room
+                                timetable.loc[(time, 'Teacher'), day] = teacher
 
-                            # keeping track of how many lectures are alloted to a timeslot and how many more need to be allocated
-                            semesterData.loc[randomSubject, randomSubjectType] -=1
+                                if randomSubjectType in self.SUBJECTTYPES[1:]:
+                                    timetable.loc[(time, 'Subject'), day] = f"{randomSubject} ({randomSubjectType[:3]})"
+                                else:
+                                    timetable.loc[(time, 'Subject'), day] = randomSubject
+
+                                # keeping track of how many lectures are alloted to a timeslot and how many more need to be allocated
+                                semesterData.loc[randomSubject, randomSubjectType] -=1
+                                    
+                                print('#' * 200)
+                                print(timetable)
+                                print('#' * 200)
+
+                                print(semesterData.to_markdown())
                                 
+                        else: # for track core/OEl subjects
+                            # finding out which TC/OEL subject is and getting other subjects in same TC/OEL group
+                            randomSubject_TrackCore = semesterData.loc[randomSubject, 'Track Core']
+                            trackCore_data = semesterData[semesterData['Track Core'] == randomSubject_TrackCore]
+
+                            teachers, subjects, classNos = self.getTrackCoreDetails(trackCore_data, randomSubjectType, day, time)
+
+                            for teacher, subject, classNo in zip(teachers, subjects, classNos):
+                                if not self.noConsecutiveLectures(timetable, day, time, teacher):
+                                    break
+
+                                if not self.noClashesCheck(randomSubjectType, day, time, teacher, classNo):
+                                    break
+                                            
+                            timetable.loc[(time, 'Room'), day] = ', '.join([str(classNo) for classNo in classNos])
+                            timetable.loc[(time, 'Teacher'), day] = ', '.join(teachers)
+                            timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} - {', '.join(subjects)}"
+
+                            for subject in subjects:
+                                semesterData.loc[subject, randomSubjectType] -= 1
+
                             print('#' * 200)
                             print(timetable)
                             print('#' * 200)
 
                             print(semesterData.to_markdown())
-
+                            
+            # saving created semester timetables for each department
             self.TIMETABLES[', '.join([str(x) for x in [courseSem]])] = timetable
             input(f"\nTimetable created for {courseSem[0]} - Semester {courseSem[1]}, press any button to continue...\n")
             system('cls')
