@@ -35,13 +35,6 @@ class Vineek:
     subjectsData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Timetable')
     classesData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Rooms')
     #! IMPORTANT #!
-    
-    @staticmethod
-    def loader():
-        """Simple loading circle, it's for fun, shush"""
-        while True:
-            for sign in '_\\|/':
-                yield sign
 
     def emptyDatabase(self):
         """Generates empty boilerplate of a timetable to be filled in
