@@ -1,5 +1,5 @@
 import pandas as pd
-
+pd.set_option('display.max_columns', 500)
 from pathlib import Path
 from random import random, choice
 from itertools import product
@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from os import system
 
 DIR = Path(__file__).parent
-BLINK = 0.05 #! the higher the value, the more the noise
+BLINK = 0.182 #! the higher the value, the more the noise
 TIMES = ['9:30 - 10:30',
          '10:30 - 11:30',
          '11:30 - 12:30',
@@ -110,7 +110,6 @@ class Vineek:
         Args:
             day (str): Day of the week lecture is taking place
             time (str): Timeslot
-            classData (pd.DataFrame): Dataframe of details for a course's semester
             subjectType (str): Whether lecture is a lab session or not
             capacity (int): Capacity of the required classroom
 
@@ -136,7 +135,7 @@ class Vineek:
         """Prevent consecutive lectures right after another of the same subject and with the same teacher
 
         Args:
-            timetable (pd.DataFrame): Dataframe that is storing the semester's timetable which is being built
+            semesterData (pd.DataFrame): Dataframe of details for a course's semester
             day (str): Day of the week
             time (str): Timeslot
             teacher (str): Name of the teacher/T.A
@@ -150,11 +149,30 @@ class Vineek:
             return True
 
         previousTime = self.TIMES[self.TIMES.index(time)-1]
-        if timetable.loc[(previousTime, 'Teacher'), day] == teacher:
-            return False
+        if type(teacher) == str: teacher = teacher.split(',')
+
+        previousTeacher = timetable.loc[(previousTime, 'Teacher'), day]
+        if type(previousTeacher) == str: previousTeacher.split(',')
+            
+        for t in teacher:
+            # input(t)
+            if t in previousTeacher:
+                return False
 
         return True
 
+    def appropriateTime(self, time, labtut):
+        if labtut:
+            if time in self.AFTERNOON_TIMES:
+                return False if random() >= self.BLINK else True
+            else:
+                return True if random() >= self.BLINK else False
+
+        else:
+            if time in self.AFTERNOON_TIMES:
+                return True if random() >= self.BLINK else False
+            else:
+                return False if random() >= self.BLINK else True
 
     def noClashesCheck(self, subjectType, day, time, teacher, room):
         """Function that iterates through past timetables to check if there are clashes in timeslots
@@ -173,24 +191,28 @@ class Vineek:
 
         # if this is the first timetable being created
         if len(self.TIMETABLES) == 0:
-            if LabTut:
-                if time in self.AFTERNOON_TIMES:
-                    return False if random() >= self.BLINK else True
-                else:
-                    return True if random() >= self.BLINK else False
-
-            else:
-                if time in self.AFTERNOON_TIMES:
-                    return True if random() >= self.BLINK else False
-                else:
-                    return False if random() >= self.BLINK else True
-
+            return self.appropriateTime(time, LabTut)
 
         # incase previous timetables were made
         else:
-            for previousTTData in self.TIMETABLES.values():
-                if (previousTTData.loc[(time, 'Room'), day] == room) or (previousTTData.loc[(time, 'Teacher'), day] == teacher):
-                    return False
+            if self.appropriateTime(time, LabTut):
+                if type(teacher) != list: teacher.split(',')
+                if type(room) != list:
+                    if type(room) != str:
+                        room = str(room).split(',')
+                
+                for previousTTData in self.TIMETABLES.values():
+                    previousRoom = previousTTData.loc[(time, 'Room'), day].split(',')
+                    previousTeacher = previousTTData.loc[(time, 'Teacher'), day].split(',')
+
+                    # input((previousRoom, previousTeacher))
+                    for t in previousTeacher:
+                        if t in teacher:
+                            return False
+
+                    for r in previousRoom:
+                        if r in room:
+                            return False
             return True if random() >= self.BLINK else False
 
 
@@ -209,6 +231,8 @@ class Vineek:
 
     def main(self):
         """Fun part"""
+        writer = pd.ExcelWriter(self.DIR / "Timetables.xlsx")
+        
         for courseSem, semesterData in self.subjectsData.groupby(by=['Department', 'Semester']):
             timetable = self.emptyDatabase()
             semesterData.set_index('Course', inplace=True)
@@ -221,18 +245,21 @@ class Vineek:
 
                     if self.allClassesSlotted(semesterData, self.SUBJECTTYPES): break
 
+                    semesterData = semesterData.sample(frac=1)
+                    # input(semesterData)
                     if timetable.loc[(time, 'Room'), day] == self.NULLVALUE:
                         randomSubject, randomSubjectType = self.getRandomSubject(semesterData, self.SUBJECTTYPES)
 
-                        if semesterData.loc[randomSubject, 'Track Core'] == self.TRACKCORE_OEL_NULLVALUE: # for regular subjects
+                        if semesterData.loc[randomSubject, 'Track Core'] == self.TRACKCORE_OEL_NULLVALUE: # find empty timeslots
                             capacity = semesterData.loc[randomSubject, 'Capacity' if randomSubjectType != 'Lab_hrs' else 'Lab_Capacity']
                             teacher = self.getTeacher(semesterData, randomSubject, randomSubjectType)
                             room = self.getClass(day, time, randomSubjectType, capacity)
 
-                            if not self.noConsecutiveLectures(timetable, day, time, teacher): break
+                            if not self.noConsecutiveLectures(timetable, day, time, teacher): 
+                                break
 
                             if self.noClashesCheck(randomSubjectType, day, time, teacher, room):
-                                timetable.loc[(time, 'Room'), day] = room
+                                timetable.loc[(time, 'Room'), day] = str(room)
                                 timetable.loc[(time, 'Teacher'), day] = teacher
 
                                 if randomSubjectType in self.SUBJECTTYPES[1:]:
@@ -252,20 +279,27 @@ class Vineek:
                         else: # for track core/OEl subjects
                             # finding out which TC/OEL subject is and getting other subjects in same TC/OEL group
                             randomSubject_TrackCore = semesterData.loc[randomSubject, 'Track Core']
+                            
                             trackCore_data = semesterData[semesterData['Track Core'] == randomSubject_TrackCore]
 
                             teachers, subjects, classNos = self.getTrackCoreDetails(trackCore_data, randomSubjectType, day, time)
+                            # input(teachers)
 
-                            for teacher, subject, classNo in zip(teachers, subjects, classNos):
-                                if not self.noConsecutiveLectures(timetable, day, time, teacher):
-                                    break
+                            # for teacher, subject, classNo in zip(teachers, subjects, classNos):
+                            if not self.noConsecutiveLectures(timetable, day, time, teacher):
+                                break
 
-                                if not self.noClashesCheck(randomSubjectType, day, time, teacher, classNo):
-                                    break
+                            # for teacher, classNo in zip(teachers, classNos):
+                            if not self.noClashesCheck(randomSubjectType, day, time, teachers, classNos):
+                                break
 
                             timetable.loc[(time, 'Room'), day] = ', '.join([str(classNo) for classNo in classNos])
                             timetable.loc[(time, 'Teacher'), day] = ', '.join(teachers)
-                            timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} - {', '.join(subjects)}"
+
+                            if randomSubjectType in self.SUBJECTTYPES[1:]:
+                                timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} ({randomSubjectType[:3]}) - {', '.join(subjects)}"
+                            else:
+                                timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} - {', '.join(subjects)}"
 
                             for subject in subjects:
                                 semesterData.loc[subject, randomSubjectType] -= 1
@@ -277,9 +311,11 @@ class Vineek:
                             print(semesterData.to_markdown())
 
             # saving created semester timetables for each department
+            timetable.to_excel(writer, sheet_name=f"{courseSem[0]} - {courseSem[1]}", merge_cells=True)
             self.TIMETABLES[', '.join([str(x) for x in [courseSem]])] = timetable
             input(f"\nTimetable created for {courseSem[0]} - Semester {courseSem[1]}, press any button to continue...\n")
             system('cls')
+        writer.close()
 
 if __name__ == '__main__':
     Vineek().main()
