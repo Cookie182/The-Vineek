@@ -35,7 +35,7 @@ class Vineek:
     subjectsData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Timetable')
     classesData = pd.read_excel(DIR / 'Time-table.xlsx', header=0, sheet_name='Rooms')
     #! IMPORTANT #!
-    
+
     @staticmethod
     def loader():
         """Simple loading circle, it's for fun, shush"""
@@ -160,7 +160,7 @@ class Vineek:
         if timetable.loc[(previousTime, 'Teacher'), day] == teacher:
             return False
 
-        return True     
+        return True
 
 
     def noClashesCheck(self, subjectType, day, time, teacher, room):
@@ -225,7 +225,7 @@ class Vineek:
                 # combination of days and timeslots
                 for dayMeeting in product(self.DAYS, self.TIMES):
                     day, time = dayMeeting
-                    
+
                     if self.allClassesSlotted(semesterData, self.SUBJECTTYPES): break
 
                     if timetable.loc[(time, 'Room'), day] == self.NULLVALUE:
@@ -237,7 +237,7 @@ class Vineek:
                             room = self.getClass(day, time, randomSubjectType, capacity)
 
                             if not self.noConsecutiveLectures(timetable, day, time, teacher): break
-                            
+
                             if self.noClashesCheck(randomSubjectType, day, time, teacher, room):
                                 timetable.loc[(time, 'Room'), day] = room
                                 timetable.loc[(time, 'Teacher'), day] = teacher
@@ -249,13 +249,13 @@ class Vineek:
 
                                 # keeping track of how many lectures are alloted to a timeslot and how many more need to be allocated
                                 semesterData.loc[randomSubject, randomSubjectType] -=1
-                                    
+
                                 print('#' * 200)
                                 print(timetable)
                                 print('#' * 200)
 
                                 print(semesterData.to_markdown())
-                                
+
                         else: # for track core/OEl subjects
                             # finding out which TC/OEL subject is and getting other subjects in same TC/OEL group
                             randomSubject_TrackCore = semesterData.loc[randomSubject, 'Track Core']
@@ -269,7 +269,7 @@ class Vineek:
 
                                 if not self.noClashesCheck(randomSubjectType, day, time, teacher, classNo):
                                     break
-                                            
+
                             timetable.loc[(time, 'Room'), day] = ', '.join([str(classNo) for classNo in classNos])
                             timetable.loc[(time, 'Teacher'), day] = ', '.join(teachers)
                             timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} - {', '.join(subjects)}"
@@ -282,7 +282,7 @@ class Vineek:
                             print('#' * 200)
 
                             print(semesterData.to_markdown())
-                            
+
             # saving created semester timetables for each department
             self.TIMETABLES[', '.join([str(x) for x in [courseSem]])] = timetable
             input(f"\nTimetable created for {courseSem[0]} - Semester {courseSem[1]}, press any button to continue...\n")
