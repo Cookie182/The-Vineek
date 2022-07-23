@@ -6,3 +6,4 @@ TODO:
 * Add ability to have *most* labs/tuts in the afternoon and lectures in the morning - DONE
 * Add ability to have track specific courses take place at the same time in different classrooms with different teachers. (TC4, TC5) - HALFWAY DONE
 * Generate the faculty time table as well
+ 
