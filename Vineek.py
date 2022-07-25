@@ -93,14 +93,14 @@ class Vineek:
 
         Args:
             data (pd.DataFrame): Dataframe of details for a course's semester
-            subject (str): Subject whose teacher/T.A details to refer to
+            subject (str): Subject whose teacher/TA details to refer to
             subjectTypes (list[str]): Types of classes for that subject
 
         Returns:
             str: Name of T.A/faculty depending if the lecture is or isn't a lab/tut respectively
         """
         if subjectType in ['Lab_hrs', 'Tut_hrs']:
-            return data.loc[subject, 'T.A']
+            return data.loc[subject, 'TA']
         else:
             return data.loc[subject, 'Faculty']
 
@@ -119,7 +119,7 @@ class Vineek:
         classType = 'Computer Lab' if subjectType == 'Lab_hrs' else 'Class'
 
         allClasses = self.classesData.loc[self.classesData['Type'] == classType]
-        allClasses = list(allClasses.loc[allClasses['Capacity'] == capacity]['Room No.'].values)
+        allClasses = list(allClasses.loc[allClasses['Capacity'] == capacity]['Room_No'].values)
 
         if len(self.TIMETABLES) == 0:
             return choice(allClasses)
@@ -233,10 +233,10 @@ class Vineek:
         """Fun part"""
         writer = pd.ExcelWriter(self.DIR / "Timetables.xlsx")
         
-        for courseSem, semesterData in self.subjectsData.groupby(by=['Department', 'Semester']):
+        for courseSem, semesterData in self.subjectsData.groupby(by=['Dept_id', 'Semester']):
             timetable = self.emptyDatabase()
-            semesterData.set_index('Course', inplace=True)
-            semesterData['Track Core'].fillna(self.TRACKCORE_OEL_NULLVALUE, inplace=True)
+            semesterData.set_index('Course_Name', inplace=True)
+            semesterData['Track_Core'].fillna(self.TRACKCORE_OEL_NULLVALUE, inplace=True)
 
             while not self.allClassesSlotted(semesterData, self.SUBJECTTYPES):
                 # combination of days and timeslots
@@ -250,7 +250,7 @@ class Vineek:
                     if timetable.loc[(time, 'Room'), day] == self.NULLVALUE:
                         randomSubject, randomSubjectType = self.getRandomSubject(semesterData, self.SUBJECTTYPES)
 
-                        if semesterData.loc[randomSubject, 'Track Core'] == self.TRACKCORE_OEL_NULLVALUE: # find empty timeslots
+                        if semesterData.loc[randomSubject, 'Track_Core'] == self.TRACKCORE_OEL_NULLVALUE: # find empty timeslots
                             capacity = semesterData.loc[randomSubject, 'Capacity' if randomSubjectType != 'Lab_hrs' else 'Lab_Capacity']
                             teacher = self.getTeacher(semesterData, randomSubject, randomSubjectType)
                             room = self.getClass(day, time, randomSubjectType, capacity)
@@ -278,9 +278,9 @@ class Vineek:
 
                         else: # for track core/OEl subjects
                             # finding out which TC/OEL subject is and getting other subjects in same TC/OEL group
-                            randomSubject_TrackCore = semesterData.loc[randomSubject, 'Track Core']
+                            randomSubject_TrackCore = semesterData.loc[randomSubject, 'Track_Core']
                             
-                            trackCore_data = semesterData[semesterData['Track Core'] == randomSubject_TrackCore]
+                            trackCore_data = semesterData[semesterData['Track_Core'] == randomSubject_TrackCore]
 
                             teachers, subjects, classNos = self.getTrackCoreDetails(trackCore_data, randomSubjectType, day, time)
                             # input(teachers)
@@ -297,9 +297,9 @@ class Vineek:
                             timetable.loc[(time, 'Teacher'), day] = ', '.join(teachers)
 
                             if randomSubjectType in self.SUBJECTTYPES[1:]:
-                                timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} ({randomSubjectType[:3]}) - {', '.join(subjects)}"
+                                timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track_Core']} ({randomSubjectType[:3]}) - {', '.join(subjects)}"
                             else:
-                                timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track Core']} - {', '.join(subjects)}"
+                                timetable.loc[(time, 'Subject'), day] = f"{semesterData.loc[randomSubject, 'Track_Core']} - {', '.join(subjects)}"
 
                             for subject in subjects:
                                 semesterData.loc[subject, randomSubjectType] -= 1
