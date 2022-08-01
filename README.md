@@ -3,5 +3,5 @@
 
 
 TODO:
-* Generate the faculty time table as well
-* Allow functionality for reserved classrooms and labs
+* Generate the faculty time table as well  ✅
+* Allow functionality for reserved classrooms and labs  ✅
