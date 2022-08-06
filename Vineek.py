@@ -98,7 +98,7 @@ class Vineek:
             subjectTypes (pd.DataFrame): list of the type of subjects to retrieve data for each
 
         Returns:
-            _type_: _description_
+            bool: Whether or not if there are any more lectures of all types left to allocate for all subjects in a semester
         """
         for subjectType in subjectTypes:
             for _, row in semesterData.iterrows():
@@ -239,15 +239,15 @@ class Vineek:
 
 
     def Labs(self, semesterData, timetable, labTime):
-        """Function that allocates the labs for
+        """Function that allocates the labs in the semester timetable from the semester data
 
         Args:
-            semesterData (_type_): _description_
-            timetable (_type_): _description_
-            labTime (_type_): _description_
+            semesterData (pd.DataFrame): Pandas Dataframe which contains data for that specific semesterData
+            timetable (pd.DataFrame): Pandas Dataframe of the timetable for the semester
+            labTime (str): Timeslot for the initial lab lecture to allocate
 
         Returns:
-            _type_: _description_
+            (pd.DataFrame, pd.DataFrame): returns the semesterData and timetable
         """
         semesterLabData = semesterData[semesterData['Lab_hrs'] > 0]
         consecutiveLabTime = self.TIMES[self.TIMES.index(labTime) + 1]
@@ -338,6 +338,17 @@ class Vineek:
 
 
     def noConsecutiveLectures(self, timetable, day, time, teacher):
+        """Check whether the next and previous lecture of the current timeslot contains the same teacher to prevent teachers from having consecutive lectures
+
+        Args:
+            timetable (pd.DataFrame): Pandas Dataframe of the semester timetable
+            day (str): Day of the weeek
+            time (str): Timeslot
+            teacher (str): Name of the teacher/TA
+
+        Returns:
+            bool: Whether the previous or next lecture from the given timeslot contains the same teacher
+        """
         if time == self.TIMES[0]:
             return True
 
@@ -355,6 +366,15 @@ class Vineek:
 
 
     def LecturesTuts(self, semesterData, timetable):
+        """Function that allocates the lectures/tutorials in the semester timetable from the semester data
+
+        Args:
+            semesterData (pd.DataFrame): Pandas Dataframe which contains data for that specific semesterData
+            timetable (pd.DataFrame): Pandas Dataframe of the timetable for the semester
+
+        Returns:
+            (pd.DataFrame, pd.DataFrame): returns the semesterData and timetable
+        """        """"""
         while not self.allClasssesSlotted(semesterData, ['Lecture_hrs', 'Tut_hrs']):
             for time, day in product(self.TIMES, self.DAYS):
                 if self.allClasssesSlotted(semesterData, ['Lecture_hrs', 'Tut_hrs']): break
@@ -448,6 +468,8 @@ class Vineek:
 
 
     def saveTables(self):
+        """Function to save the timetables for all types of lectures, rooms and faculties into an organised excel directory
+        """
         ttPath = self.DIR / 'Vineek Timetables'
         ttPath.mkdir(parents=True, exist_ok=True)
 
