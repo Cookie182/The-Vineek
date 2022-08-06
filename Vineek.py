@@ -30,8 +30,7 @@ class Vineek:
         self.TIMETABLES = dict()
         self.facultyTT = dict()
         self.roomTT = dict()
-
-        self.main()
+        self.main() # absolute war
 
 
     @staticmethod
@@ -127,7 +126,7 @@ class Vineek:
 
         randomSubject, randomSubjectType = choice(subjectTypesCount)
         return randomSubject, randomSubjectType
-    
+
 
     @staticmethod
     def getTeacher(semesterData, subject, subjectType):
@@ -232,7 +231,7 @@ class Vineek:
         self.facultyTT[facultyName].loc[(time, 'Room'), day] = room
         self.facultyTT[facultyName].loc[(time, 'Subject'), day] = subjectName
         self.facultyTT[facultyName].loc[(time, 'Teacher'), day]  = facultyName
-        
+
         # room timetable
         self.roomTT[room].loc[(time, 'Room'), day] = room
         self.roomTT[room].loc[(time, 'Subject'), day] = subjectName
@@ -283,7 +282,7 @@ class Vineek:
                             print('#' * 200)
                             print(timetable)
                             print('#' * 200)
-                            print(semesterData.to_markdown())
+                            print(semesterData)
                             break
 
                     else:
@@ -330,13 +329,13 @@ class Vineek:
                         print('#' * 200)
                         print(timetable)
                         print('#' * 200)
-                        print(semesterData.to_markdown())
+                        print(semesterData)
                         break
 
             if self.allClasssesSlotted(semesterLabData, ['Lab_hrs']): break
 
         return (semesterData, timetable)
-    
+
 
     def noConsecutiveLectures(self, timetable, day, time, teacher):
         if time == self.TIMES[0]:
@@ -388,8 +387,7 @@ class Vineek:
                                 print('#' * 200)
                                 print(timetable)
                                 print('#' * 200)
-
-                                print(semesterData.to_markdown())
+                                print(semesterData)
                                 break
 
                         else:
@@ -443,7 +441,7 @@ class Vineek:
                             print(timetable)
                             print('#' * 200)
 
-                            print(semesterData.to_markdown())
+                            print(semesterData)
                             break
 
         return semesterData, timetable
@@ -490,7 +488,7 @@ class Vineek:
                 print('#' * 200)
                 print(timetable)
                 print('#' * 200)
-                print(semesterData.to_markdown())
+                print(semesterData)
 
                 semesterData, timetable = self.LecturesTuts(semesterData, timetable)
 
