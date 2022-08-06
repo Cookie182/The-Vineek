@@ -10,7 +10,10 @@
  * Speaking of track cores, if a subject is common in a track core, allocate them in the same slot, assuming they also have the same teacher.
  * Try to keep the sample size small. To do this, try to only specific specific rooms to use for a specific course as the algorithm may panic and/or freeze
  * All the final outputs are in an excel format for further modifications and/or to cross reference to make more subjective changes
+ * If you do wish to change the timeslots for all lectures, or even timeslots for labs as the amount of labs (assuming there are labs for the subject, are in multiples of 2) will be held consecutively, they can be changed within the code itself but in a very easy format just by editing the timeslots respectively near the end of the .py script.
  * Be gentle, she's a shy kind-hearted soul
+
+### The .exe file provided in the download link below has been created by using the *pyinstaller* module to convert the 'Vineek.py' script into a .exe file
 
 ### Credits and download link:
 * Program (.exe file) can be downloaded from [here](https://drive.google.com/drive/folders/1e6kpmUnc4yMLztULQDPaKkb09AZ33y5b?usp=sharing)
