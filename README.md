@@ -12,8 +12,7 @@
  * All the final outputs are in an excel format for further modifications and/or to cross reference to make more subjective changes
  * Be gentle, she's a shy kind-hearted soul
 
-Program (.exe file) can be downloaded from [here](https://drive.google.com/drive/folders/1e6kpmUnc4yMLztULQDPaKkb09AZ33y5b?usp=sharing)
-
-Algorithm created by: Ashwin Jawalikar (me).
-
-Data gathering and Logistics done by: [Gurvinder Kaur](https://github.com/gurvinder08)
+Final points:
+* Program (.exe file) can be downloaded from [here](https://drive.google.com/drive/folders/1e6kpmUnc4yMLztULQDPaKkb09AZ33y5b?usp=sharing)
+* Algorithm created by: Ashwin Jawalikar (me).
+* Data gathering and logistics done by: [Gurvinder Kaur](https://github.com/gurvinder08)
