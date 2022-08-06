@@ -229,14 +229,14 @@ class Vineek:
             self.roomTT[room] = self.emptyTimetable()
 
         # faculty timetable
-        self.facultyTT[facultyName][(time, 'Room'), day] = room
-        self.facultyTT[facultyName][(time, 'Subject'), day] = subjectName
-        self.facultyTT[facultyName][(time, 'Teacher'), day]  = facultyName
-
+        self.facultyTT[facultyName].loc[(time, 'Room'), day] = room
+        self.facultyTT[facultyName].loc[(time, 'Subject'), day] = subjectName
+        self.facultyTT[facultyName].loc[(time, 'Teacher'), day]  = facultyName
+        
         # room timetable
-        self.roomTT[room][(time, 'Room'), day] = room
-        self.roomTT[room][(time, 'Subject'), day] = subjectName
-        self.roomTT[room][(time, 'Teacher'), day]  = facultyName
+        self.roomTT[room].loc[(time, 'Room'), day] = room
+        self.roomTT[room].loc[(time, 'Subject'), day] = subjectName
+        self.roomTT[room].loc[(time, 'Teacher'), day]  = facultyName
 
 
     def Labs(self, semesterData, timetable, labTime):
