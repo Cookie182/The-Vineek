@@ -3,6 +3,7 @@
  * All the timetables, along with the initial excel sheet to provide the necessary data will be on the desktop. If not, the file directory path for them will be shown
  * 'Lecture_hrs', 'Tut_hrs', 'Lab_hrs' represents the amount of lectures of each respective type of lecture there is for a particular subject.
  * If a subject does not have any lab or tutorial lectures, the 'TA' column for that subject should be left as blank
+ * Continuing from the previous point, put a 0 respective columns of 'Lecture_hrs', 'Lab_hrs', 'Tut_hrs' if the subject doesn't have any of those respective type of classes
  * 'Assigned_Room' and 'Assigned_Lab' columns are for pre-allocating specific rooms for a subject, either for a lecture or for a lab/tutorial session respectively
  * Please do not use the same values for 'Course_id' and 'Track_Core' columns
  * Please do make sure all variables in the 'Course_id' feature are unique as they play a integral role for track cores
