@@ -130,7 +130,7 @@ class Vineek:
 
     @staticmethod
     def getTeacher(semesterData, subject, subjectType):
-        """Function to get the teacher/TA for that subject and subject type of
+        """Function to get the teacher/TA for that subject depending on the type of lecture
 
         Args:
             semesterData (pd.DataFrame): Pandas Dataframe of the timetable which contains data for that specific semesterData
