@@ -12,6 +12,8 @@
  * All the final outputs are in an excel format for further modifications and/or to cross reference to make more subjective changes
  * If you do wish to change the timeslots for all lectures, or even timeslots for labs as the amount of labs (assuming there are labs for the subject, are in multiples of 2) will be held consecutively, they can be changed within the code itself but in a very easy format just by editing the timeslots respectively near the end of the .py script.
  * Be gentle, she's a shy kind-hearted soul
+ 
+### As an example of how data should be filled, look at the *Time-table.xlsx* file above
 
 ### The .exe file provided in the download link below has been created by using the *pyinstaller* module to convert the 'Vineek.py' script into a .exe file
 
