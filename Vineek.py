@@ -3,55 +3,40 @@ pd.set_option('display.max_columns', 500)
 from pathlib import Path
 from random import choice
 from itertools import product
-from os import system
+from os import system, getlogin
 from time import sleep
 
 
 class Vineek:
-    def __init__(self, TIMES, LABTIMES, DAYS, NULLVALUE=''):
-        self.DIR = self.makeDir()
-        self.TIMES = TIMES
-        self.LABTIMES = LABTIMES
+    def __init__(self, TIMESLOTS, DAYS, NULLVALUE=''):
+        self.DIR = Path(f"C:\\Users\\{getlogin()}\\Desktop") # get the directory to the current windows user's desktop
+        self.TIMESLOTS = TIMESLOTS
+        self.LABTIMES = self.generateLabTimes()
         self.DAYS = DAYS
         self.SUBJECTTYPES = ['Lecture_hrs', 'Lab_hrs', 'Tut_hrs']
         self.NULLVALUE = NULLVALUE
         self.fileName = 'Time-table.xlsx'
 
+        print("Welcome to the Vineek timetable generation algorithm! Do note that if it looks like the program is stuck, simply close the window and start it up again!\n\nCredits:\nAshwin Rajesh Jawalikar\nGurvinder Kaur\n")
+        
         if (self.DIR / self.fileName).is_file():
             print(f"File found {self.DIR / self.fileName}")
             self.subjectsData = pd.read_excel(self.DIR / self.fileName, header=0, sheet_name='Timetable')
             self.classesData = pd.read_excel(self.DIR / self.fileName, header=0, sheet_name='Rooms')
-            input("Excel found for timetable data found, please make sure everything is entered corerctly before pressing Enter...")
+            input("Excel found for timetable data found, please make sure everything is entered correctly before pressing Enter...")
+            system('cls')
         else:
-            self.createExcelFile()
-            self.subjectsData = pd.read_excel(self.DIR / self.fileName, header=0, sheet_name='Timetable')
-            self.classesData = pd.read_excel(self.DIR / self.fileName, header=0, sheet_name='Rooms')
+            self.createTTDataExcelFile()
 
-        self.TIMETABLES = dict()
-        self.facultyTT = dict()
-        self.roomTT = dict()
+        self.TIMETABLES = dict() # store lecture timetables for each batch, semester and course
+        self.facultyTT = dict() # store faculty timetables
+        self.roomTT = dict() # store room timetables
         self.main() # absolute war
 
 
-    @staticmethod
-    def makeDir():
-        """Func that finds the path to the desktop of the user to store timetable and store created timetables"""
-        path = Path("C:\\Users")
-        for folder in path.glob('*'):
-            if folder.parts[-1] not in ['All Users', 'Default', 'Default User', 'desktop.ini', 'Public']:
-                path_ = path / folder.parts[-1] / 'Desktop'
-                if path_.is_dir():
-                    path = path / folder.parts[-1] / 'Desktop'
-                    break
+    def createTTDataExcelFile(self):
+        """Function to create the prerequisite excel file needed for gathering appropriate data for timetable creation"""
 
-        print(f"Everything will be stored in {path}\n")
-        sleep(3)
-        return path
-
-
-    def createExcelFile(self):
-        """Function to create the prerequisite excel files needed for gathering appropriate data
-        """
         timetableColumns = ['Dept_id', 'Course_id', 'Track_Core', 'Course_Name', 'Faculty', 'TA', 'Semester', 'Lecture_hrs',
                             'Tut_hrs', 'Capacity', 'Lab_hrs', 'Lab_Capacity', 'Assigned_Room', 'Assigned_Lab']
         roomsColumns = ['Room_No', 'Capacity', 'Type']
@@ -61,8 +46,8 @@ class Vineek:
         pd.DataFrame(columns=timetableColumns).set_index(timetableColumns[0]).to_excel(writer, sheet_name='Timetable')
         pd.DataFrame(columns=roomsColumns).set_index(roomsColumns[0]).to_excel(writer, sheet_name='Rooms')
         writer.save()
-        input('Excel file created...please input details approriately before continuing ...')
-        system('cls')
+        input(f'Excel file created, path: {self.DIR / self.fileName}...please input details approriately to start generating timetables. The program is now going to exit, simply start the program again after entering the necessary timetable data.')
+        exit()
 
 
     def emptyTimetable(self):
@@ -71,12 +56,29 @@ class Vineek:
         Returns:
             pd.DataFrame: Empty dataframe with appropriate columns and timeslot data
         """
-        index = pd.MultiIndex.from_product([self.TIMES,
+
+        index = pd.MultiIndex.from_product([self.TIMESLOTS,
                                             ['Subject', 'Teacher', 'Room']],
                                            names=['Time', 'Details'])
         emptyDatabase = pd.DataFrame(data=self.NULLVALUE, index=index, columns=self.DAYS)
         return emptyDatabase
 
+
+    def generateLabTimes(self):
+        """Generate a list of timeslots that can hold uninterrupted 2 hour lab sessions for subjects
+
+        Returns:
+            list: list of timeslots
+        """
+        
+        labTimes = []
+        for timeslotIndex, timeslot in enumerate(self.TIMESLOTS[:-1]):
+            timeslotEndTime = timeslot.split(' - ')[-1]
+            if timeslotEndTime in self.TIMESLOTS[timeslotIndex+1]:
+                labTimes.append(timeslot)
+
+        return labTimes
+    
 
     def getLabTimes(self):
         """Function that iterates through the Lab times for unique batch for each course of
@@ -84,6 +86,7 @@ class Vineek:
         Yields:
             str: timeslot to allocate labs
         """
+
         while True:
             for time in self.LABTIMES:
                 yield time
@@ -100,6 +103,7 @@ class Vineek:
         Returns:
             bool: Whether or not if there are any more lectures of all types left to allocate for all subjects in a semester
         """
+
         for subjectType in subjectTypes:
             for _, row in semesterData.iterrows():
                 if row[subjectType] > 0:
@@ -108,7 +112,8 @@ class Vineek:
         return True
 
 
-    def getRandomSubject(self, semesterData, subjectTypes):
+    @staticmethod
+    def getRandomSubject(semesterData, subjectTypes):
         """Func that returns a random subject and type of lecture that is yet to be alloted
 
         Args:
@@ -118,6 +123,7 @@ class Vineek:
         Returns:
             string, string: returns a random subject and the type of lecture of that subject to be assigned
         """
+
         subjectTypesCount = []
         for subject in semesterData.index:
             for subjectType in subjectTypes:
@@ -140,6 +146,7 @@ class Vineek:
         Returns:
             str: Name of the teacher/TA depending on subject type
         """
+
         return semesterData.loc[subject, 'TA' if subjectType in ['Lab_hrs', 'Tut_hrs'] else 'Faculty']
 
 
@@ -201,6 +208,7 @@ class Vineek:
         Returns:
             bool: returns if there are clashes found or not
         """
+
         if len(self.TIMETABLES) == 0:
             return True
 
@@ -221,6 +229,7 @@ class Vineek:
             subjectName (str): Name of the subjectName
             room (int): room/lab number
         """
+
         if facultyName not in self.facultyTT.keys():
             self.facultyTT[facultyName] = self.emptyTimetable()
 
@@ -228,9 +237,10 @@ class Vineek:
             self.roomTT[room] = self.emptyTimetable()
 
         # faculty timetable
-        self.facultyTT[facultyName].loc[(time, 'Room'), day] = room
-        self.facultyTT[facultyName].loc[(time, 'Subject'), day] = subjectName
-        self.facultyTT[facultyName].loc[(time, 'Teacher'), day]  = facultyName
+        if (facultyName != '') or (not facultyName.isspace()): # prevent generation of faculty TT with blank names
+            self.facultyTT[facultyName].loc[(time, 'Room'), day] = room
+            self.facultyTT[facultyName].loc[(time, 'Subject'), day] = subjectName
+            self.facultyTT[facultyName].loc[(time, 'Teacher'), day]  = facultyName
 
         # room timetable
         self.roomTT[room].loc[(time, 'Room'), day] = room
@@ -249,8 +259,9 @@ class Vineek:
         Returns:
             (pd.DataFrame, pd.DataFrame): returns the semesterData and timetable
         """
+
         semesterLabData = semesterData[semesterData['Lab_hrs'] > 0]
-        consecutiveLabTime = self.TIMES[self.TIMES.index(labTime) + 1]
+        consecutiveLabTime = self.TIMESLOTS[self.TIMESLOTS.index(labTime) + 1]
 
         while not self.allClasssesSlotted(semesterLabData, ['Lab_hrs']):
             for day in self.DAYS:
@@ -349,16 +360,17 @@ class Vineek:
         Returns:
             bool: Whether the previous or next lecture from the given timeslot contains the same teacher
         """
-        if time == self.TIMES[0]:
+
+        if time == self.TIMESLOTS[0]:
             return True
 
-        previousTime = self.TIMES[self.TIMES.index(time)-1]
+        previousTime = self.TIMESLOTS[self.TIMESLOTS.index(time)-1]
         if timetable.loc[(previousTime, 'Teacher'), day] == teacher: # check if the previous lecture is the same
             return False
 
         # if this is not the last lecture of the day
-        if time != self.TIMES[-1]:
-            nextTime = self.TIMES[self.TIMES.index(time)+1]
+        if time != self.TIMESLOTS[-1]:
+            nextTime = self.TIMESLOTS[self.TIMESLOTS.index(time)+1]
             if timetable.loc[(nextTime, 'Teacher'), day] == teacher: # check if the next lecture is the same
                 return False
 
@@ -374,9 +386,10 @@ class Vineek:
 
         Returns:
             (pd.DataFrame, pd.DataFrame): returns the semesterData and timetable
-        """        """"""
+        """
+
         while not self.allClasssesSlotted(semesterData, ['Lecture_hrs', 'Tut_hrs']):
-            for time, day in product(self.TIMES, self.DAYS):
+            for time, day in product(self.TIMESLOTS, self.DAYS):
                 if self.allClasssesSlotted(semesterData, ['Lecture_hrs', 'Tut_hrs']): break
 
                 if timetable.loc[(time, 'Room'), day] == self.NULLVALUE:
@@ -468,8 +481,8 @@ class Vineek:
 
 
     def saveTables(self):
-        """Function to save the timetables for all types of lectures, rooms and faculties into an organised excel directory
-        """
+        """Function to save the timetables for all types of lectures, rooms and faculties into an organised excel directory """
+
         ttPath = self.DIR / 'Vineek Timetables'
         ttPath.mkdir(parents=True, exist_ok=True)
 
@@ -489,7 +502,8 @@ class Vineek:
         print(f"\nAll room timetables have been saved in {roomPath}\n")
 
         for ttName, TT in self.facultyTT.items():
-            TT.to_excel(facultyPath / f"{ttName}.xlsx", merge_cells=True)
+            if ttName != '':
+                TT.to_excel(facultyPath / f"{ttName}.xlsx", merge_cells=True)
         print(f"\nAll faculty timetables have been saved in {facultyPath}\n")
 
 
@@ -500,8 +514,16 @@ class Vineek:
             semesterDataMain.set_index('Course_Name', inplace=True)
             semesterDataMain.fillna(self.NULLVALUE, inplace=True)
 
-            batchCount = int(input(f"How many batches are there for {courseSem[0]} - Semester {courseSem[1]}? "))
-            for _ in range(batchCount):
+            while True:
+                try:
+                    batchCount = int(input(f"How many batches are there for {courseSem[0]} - Semester {courseSem[1]}? (Maximum can be 4!): "))
+                    if batchCount > 4: raise ValueError("Number of batches too high!")
+                    break
+                except:
+                    print("\nPlease enter a valid number of batches!")
+
+            for batchNo in range(batchCount):
+                sleep(1)
                 timetable = self.emptyTimetable()
 
                 """LABS"""
@@ -512,30 +534,33 @@ class Vineek:
                 print('#' * 200)
                 print(semesterData)
 
+                """FOR LECTURES AND TUTORIALS"""
                 semesterData, timetable = self.LecturesTuts(semesterData, timetable)
 
-                self.TIMETABLES['-'.join([str(x) for x in courseSem])] = timetable
+                """SAVING THE TIMETABLE"""
+                timetableName = f"{courseSem[0]} - Semester {courseSem[1]}"
+                if batchCount < 2:
+                    self.TIMETABLES[timetableName] = timetable
+                else:
+                    timetableName += f" - Batch {batchNo+1}"
+                    self.TIMETABLES[timetableName] = timetable
 
         print("\nTimetables generated, saving them in their respective folders...\n")
-        self.saveTables()
+        sleep(1)
+        self.saveTables() # creating room & faculty timetables then saving them on top of the timetables for lectures
 
         input("\nAll timetables generated!")
 
 
-TIMES = ['9:30 AM - 10:30 AM',
-        '10:30 AM - 11:30 AM',
-        '11:30 AM - 12:30 PM',
-        '1:30 PM - 2:30 PM',
-        '2:30 PM - 3:30 PM',
-        '3:30 PM - 4:30 PM',
-        '4:30 PM - 5:30 PM']
-
-LABTIMES = ['3:30 PM - 4:30 PM',
-            '10:30 AM - 11:30 AM',
-            '1:30 PM - 2:30 PM']
+TIMESLOTS = ['9:30 AM - 10:30 AM',
+             '10:30 AM - 11:30 AM',
+             '11:30 AM - 12:30 PM',
+             '1:30 PM - 2:30 PM',
+             '2:30 PM - 3:30 PM',
+             '3:30 PM - 4:30 PM',
+             '4:30 PM - 5:30 PM']
 
 DAYS = ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri']
 
-Vineek(TIMES = TIMES,
-       LABTIMES = LABTIMES,
+Vineek(TIMESLOTS = TIMESLOTS,
        DAYS = DAYS)
