@@ -1,5 +1,5 @@
-import pandas as pd
-pd.set_option('display.max_columns', 500)
+from pandas import DataFrame, MultiIndex, read_excel, ExcelWriter, set_option
+set_option('display.max_columns', 500)
 from pathlib import Path
 from random import choice
 from itertools import product
@@ -21,8 +21,8 @@ class Vineek:
         
         if (self.DIR / self.fileName).is_file():
             print(f"File found {self.DIR / self.fileName}")
-            self.subjectsData = pd.read_excel(self.DIR / self.fileName, header=0, sheet_name='Timetable')
-            self.classesData = pd.read_excel(self.DIR / self.fileName, header=0, sheet_name='Rooms')
+            self.subjectsData = read_excel(self.DIR / self.fileName, header=0, sheet_name='Timetable')
+            self.classesData = read_excel(self.DIR / self.fileName, header=0, sheet_name='Rooms')
             input("Excel found for timetable data found, please make sure everything is entered correctly before pressing Enter...")
             system('cls')
         else:
@@ -41,10 +41,10 @@ class Vineek:
                             'Tut_hrs', 'Capacity', 'Lab_hrs', 'Lab_Capacity', 'Assigned_Room', 'Assigned_Lab']
         roomsColumns = ['Room_No', 'Capacity', 'Type']
 
-        writer = pd.ExcelWriter(self.DIR / self.fileName)
+        writer = ExcelWriter(self.DIR / self.fileName)
 
-        pd.DataFrame(columns=timetableColumns).set_index(timetableColumns[0]).to_excel(writer, sheet_name='Timetable')
-        pd.DataFrame(columns=roomsColumns).set_index(roomsColumns[0]).to_excel(writer, sheet_name='Rooms')
+        DataFrame(columns=timetableColumns).set_index(timetableColumns[0]).to_excel(writer, sheet_name='Timetable')
+        DataFrame(columns=roomsColumns).set_index(roomsColumns[0]).to_excel(writer, sheet_name='Rooms')
         writer.save()
         input(f'Excel file created, path: {self.DIR / self.fileName}...please input details approriately to start generating timetables. The program is now going to exit, simply start the program again after entering the necessary timetable data.')
         exit()
@@ -57,10 +57,10 @@ class Vineek:
             pd.DataFrame: Empty dataframe with appropriate columns and timeslot data
         """
 
-        index = pd.MultiIndex.from_product([self.TIMESLOTS,
+        index = MultiIndex.from_product([self.TIMESLOTS,
                                             ['Subject', 'Teacher', 'Room']],
                                            names=['Time', 'Details'])
-        emptyDatabase = pd.DataFrame(data=self.NULLVALUE, index=index, columns=self.DAYS)
+        emptyDatabase = DataFrame(data=self.NULLVALUE, index=index, columns=self.DAYS)
         return emptyDatabase
 
 
