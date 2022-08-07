@@ -15,9 +15,6 @@
  
 ### As an example of how data should be filled, look at the *Time-table.xlsx* file above
 
-### The .exe file provided in the download link below has been created by using the *pyinstaller* module to convert the 'Vineek.py' script into a .exe file
-
-### Credits and download link:
-* Program (.exe file) can be downloaded from [here](https://drive.google.com/drive/folders/1e6kpmUnc4yMLztULQDPaKkb09AZ33y5b?usp=sharing)
+### Credits:
 * Algorithm created by: Ashwin Jawalikar (me).
 * Data gathering and logistics done by: [Gurvinder Kaur](https://github.com/gurvinder08)
